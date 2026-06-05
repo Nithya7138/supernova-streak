@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SN Streak">
+<title>Supernova Streak</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/favicon.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="theme-color" content="#060810">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --g:#00FFB2;--g2:#00C98A;--g3:#007A54;
+  --red:#FF4D6D;--red2:#FF8FA3;
+  --bg:#060810;--bg2:#0C0F1A;--bg3:#111524;
+  --card:#0F1320;--card2:#161B2E;
+  --text:#E8ECF8;--text2:#7B84A8;--text3:#3A4060;
+  --border:#1E2440;--border2:#252B48;
+  --gold:#FFB830;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;overflow-x:hidden}
+body{padding-bottom:96px}
+
+/* NEBULA BACKGROUND */
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 60% 40% at 80% 10%, rgba(0,255,178,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 60% at 10% 80%, rgba(0,120,200,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 30% 30% at 50% 50%, rgba(0,255,178,0.03) 0%, transparent 70%);
+}
+
+/* STARS */
+.stars{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.star{position:absolute;background:#fff;border-radius:50%;animation:twinkle var(--d,3s) ease-in-out infinite var(--delay,0s)}
+@keyframes twinkle{0%,100%{opacity:var(--min,0.1)}50%{opacity:var(--max,0.8)}}
+
+/* TOPBAR */
+.topbar{position:relative;z-index:10;padding:20px 20px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.topbar::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--g),transparent);opacity:0.4}
+.topbar-left h1{font-size:19px;font-weight:800;color:#fff;letter-spacing:-0.5px;display:flex;align-items:center;gap:8px}
+.topbar-left h1 .sn-dot{width:8px;height:8px;border-radius:50%;background:var(--g);box-shadow:0 0 8px var(--g);display:inline-block;animation:pulse-dot 2s ease-in-out infinite}
+@keyframes pulse-dot{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.5);opacity:0.6}}
+.topbar-left p{font-size:11px;color:var(--text2);margin-top:3px;font-family:'JetBrains Mono',monospace;letter-spacing:0.5px}
+.flame-badge{background:linear-gradient(135deg,#1A2A1A,#0D1A0D);border:1px solid rgba(0,255,178,0.25);border-radius:10px;padding:8px 14px;display:flex;align-items:center;gap:7px;box-shadow:0 0 20px rgba(0,255,178,0.08)}
+.flame-badge .fire{font-size:18px;filter:drop-shadow(0 0 6px rgba(255,140,0,0.8))}
+.flame-badge span{font-size:22px;font-weight:700;color:var(--g);font-family:'JetBrains Mono',monospace;line-height:1}
+
+/* HERO */
+.hero{position:relative;z-index:10;padding:28px 20px 24px;text-align:center;border-bottom:1px solid var(--border)}
+.streak-ring{width:130px;height:130px;margin:0 auto 14px;position:relative}
+.streak-ring svg{width:130px;height:130px;transform:rotate(-90deg)}
+.streak-ring circle{fill:none;stroke-width:5;stroke-linecap:round}
+.ring-bg{stroke:var(--border2)}
+.ring-glow{stroke:var(--g);stroke-dasharray:352;stroke-dashoffset:352;opacity:0.15;stroke-width:10;filter:blur(4px)}
+.ring-fill{stroke:url(#ringGrad);stroke-dasharray:352;stroke-dashoffset:352;transition:stroke-dashoffset 1.2s cubic-bezier(0.34,1.56,0.64,1)}
+.streak-inner{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.streak-num{font-size:40px;font-weight:800;color:var(--g);font-family:'JetBrains Mono',monospace;line-height:1;text-shadow:0 0 30px rgba(0,255,178,0.5)}
+.streak-lbl{font-size:9px;color:var(--text2);letter-spacing:3px;text-transform:uppercase;margin-top:3px;font-family:'JetBrains Mono',monospace}
+.hero-sub{font-size:13px;color:var(--text2);margin-top:2px}
+
+/* METRICS */
+.metrics{position:relative;z-index:10;display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:14px}
+.metric-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;position:relative;overflow:hidden;transition:border-color 0.2s}
+.metric-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--g),transparent);opacity:0}
+.metric-card:nth-child(1)::before{opacity:0.6}
+.metric-card .lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;font-family:'JetBrains Mono',monospace}
+.metric-card .val{font-size:28px;font-weight:700;color:var(--text);font-family:'JetBrains Mono',monospace;line-height:1}
+.metric-card:nth-child(1) .val{color:var(--g);text-shadow:0 0 20px rgba(0,255,178,0.3)}
+.metric-card .sub{font-size:10px;color:var(--text3);margin-top:4px}
+
+/* SECTION */
+.section{position:relative;z-index:10;padding:0 14px 16px}
+.section-title{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* UPLOAD */
+.upload-box{border:1.5px dashed var(--border2);border-radius:18px;padding:28px 20px;text-align:center;cursor:pointer;transition:all 0.25s;background:var(--card);position:relative;overflow:hidden}
+.upload-box::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center, rgba(0,255,178,0.04) 0%, transparent 70%);opacity:0;transition:opacity 0.3s}
+.upload-box:active::before,.upload-box.drag::before{opacity:1}
+.upload-box:active,.upload-box.drag{border-color:var(--g);border-style:solid}
+.upload-box .u-icon{font-size:38px;margin-bottom:12px;filter:drop-shadow(0 0 10px rgba(0,255,178,0.3))}
+.upload-box .u-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px}
+.upload-box .u-sub{font-size:12px;color:var(--text2);line-height:1.6}
+.preview{width:100%;max-height:180px;object-fit:contain;border-radius:14px;border:1px solid var(--border2);margin-bottom:10px;display:none}
+
+/* VERIFY BTN */
+.verify-btn{width:100%;padding:15px;background:linear-gradient(135deg,var(--g),var(--g2));color:#060810;border:none;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;font-family:'Syne',sans-serif;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;letter-spacing:0.3px;box-shadow:0 4px 24px rgba(0,255,178,0.25)}
+.verify-btn:disabled{background:var(--card2);color:var(--text3);cursor:not-allowed;box-shadow:none}
+.verify-btn:not(:disabled):active{transform:scale(0.98);box-shadow:0 2px 12px rgba(0,255,178,0.2)}
+
+/* RESULT */
+.result{border-radius:12px;padding:12px 14px;margin-top:10px;display:none;align-items:flex-start;gap:10px}
+.result.show{display:flex}
+.result.ok{background:rgba(0,255,178,0.06);border:1px solid rgba(0,255,178,0.3)}
+.result.fail{background:rgba(255,77,109,0.06);border:1px solid rgba(255,77,109,0.3)}
+.result.checking{background:var(--card);border:1px solid var(--border)}
+.result .r-title{font-size:14px;font-weight:700}
+.result .r-sub{font-size:12px;color:var(--text2);margin-top:3px;line-height:1.5}
+.result.ok .r-title{color:var(--g)}
+.result.fail .r-title{color:var(--red2)}
+.spinner{width:20px;height:20px;border:2px solid var(--border2);border-top-color:var(--g);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0;margin-top:1px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* DONE BANNER */
+.done-banner{background:rgba(0,255,178,0.06);border:1px solid rgba(0,255,178,0.25);border-radius:14px;padding:14px 16px;display:none;align-items:center;gap:12px;margin-bottom:12px}
+.done-banner.show{display:flex}
+.done-banner p{font-size:13px;color:var(--g);font-weight:600}
+
+/* CALENDAR */
+.cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.cal-day-lbl{text-align:center;font-size:9px;color:var(--text3);padding:3px 0;font-family:'JetBrains Mono',monospace;letter-spacing:1px}
+.cal-cell{aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text3);transition:all 0.15s}
+.cal-cell.done{background:linear-gradient(135deg,var(--g3),var(--g2));color:#fff;font-weight:700;box-shadow:0 2px 8px rgba(0,255,178,0.2)}
+.cal-cell.miss{background:rgba(255,77,109,0.12);color:rgba(255,77,109,0.5)}
+.cal-cell.today{border:1.5px solid var(--g);color:var(--text);font-weight:700;background:rgba(0,255,178,0.05)}
+.cal-cell.today.done{border-color:var(--g2)}
+.cal-cell.future{opacity:0.2}
+
+/* HISTORY */
+.hist-item{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:var(--card);border:1px solid var(--border);border-radius:11px;margin-bottom:6px;transition:border-color 0.2s}
+.hist-item:first-child{border-color:var(--border2)}
+.hist-date{font-size:12px;color:var(--text2);font-family:'JetBrains Mono',monospace}
+.badge{font-size:10px;padding:3px 10px;border-radius:20px;font-weight:700;letter-spacing:0.5px}
+.badge.done{background:rgba(0,255,178,0.1);color:var(--g);border:1px solid rgba(0,255,178,0.3)}
+.badge.miss{background:rgba(255,77,109,0.1);color:var(--red2);border:1px solid rgba(255,77,109,0.3)}
+
+/* ALARM BAR */
+.alarm-bar{background:var(--card);border-top:1px solid var(--border);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;position:fixed;bottom:0;left:0;right:0;z-index:100;transition:background 0.3s}
+.alarm-bar::before{content:'';position:absolute;top:-1px;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--g),transparent);opacity:0.3;transition:opacity 0.3s}
+.alarm-bar.alarm-off{background:#0d0f14}
+.alarm-bar.alarm-off::before{opacity:0}
+.alarm-info{flex:1;min-width:0}
+.alarm-info .a-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:1px;font-family:'JetBrains Mono',monospace}
+.alarm-info .a-time{font-size:20px;font-weight:700;font-family:'JetBrains Mono',monospace;line-height:1.2;transition:color 0.3s}
+.alarm-bar:not(.alarm-off) .a-time{color:var(--g)}
+.alarm-bar.alarm-off .a-time{color:var(--text3);text-decoration:line-through;opacity:0.5}
+.alarm-info .a-status{font-size:10px;margin-top:2px;font-family:'JetBrains Mono',monospace;font-weight:600;transition:color 0.3s}
+.alarm-info .a-status.on{color:var(--g)}
+.alarm-info .a-status.off{color:var(--red)}
+.alarm-controls{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.btn-change{background:var(--card2);border:1px solid var(--border2);border-radius:8px;padding:7px 14px;font-size:12px;color:var(--text2);cursor:pointer;font-family:'Syne',sans-serif;font-weight:600;transition:all 0.15s}
+.btn-change:active{border-color:var(--g);color:var(--g)}
+
+/* BIG CLEAR ON/OFF TOGGLE */
+.alarm-onoff{position:relative;width:72px;height:34px;flex-shrink:0;cursor:pointer;border:none;background:none;padding:0}
+.alarm-onoff-track{position:absolute;inset:0;border-radius:17px;transition:all 0.3s;border:2px solid}
+.alarm-onoff.on .alarm-onoff-track{background:rgba(0,255,178,0.12);border-color:var(--g);box-shadow:0 0 12px rgba(0,255,178,0.2)}
+.alarm-onoff.off .alarm-onoff-track{background:rgba(255,77,109,0.08);border-color:rgba(255,77,109,0.4)}
+.alarm-onoff-knob{position:absolute;top:4px;width:22px;height:22px;border-radius:50%;transition:all 0.3s;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;font-family:'JetBrains Mono',monospace}
+.alarm-onoff.on .alarm-onoff-knob{left:42px;background:var(--g);color:#060810;box-shadow:0 0 10px rgba(0,255,178,0.5)}
+.alarm-onoff.off .alarm-onoff-knob{left:4px;background:var(--red);color:#fff;box-shadow:0 0 8px rgba(255,77,109,0.4)}
+.alarm-onoff-label{position:absolute;top:50%;transform:translateY(-50%);font-size:10px;font-weight:800;font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;transition:all 0.3s}
+.alarm-onoff.on .alarm-onoff-label{left:10px;color:var(--g);opacity:0.8}
+.alarm-onoff.off .alarm-onoff-label{right:8px;color:var(--red);opacity:0.7}
+
+/* OVERLAY */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:200;align-items:flex-end;backdrop-filter:blur(4px)}
+.overlay.show{display:flex}
+.popup{background:var(--card);border-radius:24px 24px 0 0;padding:26px 20px 36px;width:100%;border-top:1px solid var(--border2)}
+.popup::before{content:'';display:block;width:40px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 20px}
+.popup h3{font-size:18px;font-weight:800;margin-bottom:4px}
+.popup p{font-size:13px;color:var(--text2);margin-bottom:22px}
+.time-row{display:flex;align-items:center;gap:10px;margin-bottom:22px;justify-content:center}
+.time-inp{background:var(--card2);border:1px solid var(--border2);border-radius:12px;color:var(--text);font-size:30px;font-weight:700;font-family:'JetBrains Mono',monospace;width:76px;text-align:center;padding:12px 0;transition:border-color 0.2s}
+.time-inp:focus{outline:none;border-color:var(--g)}
+.time-sep{font-size:30px;font-weight:700;color:var(--text2)}
+.ampm-sel{background:var(--card2);border:1px solid var(--border2);border-radius:12px;color:var(--text);font-size:16px;font-family:'JetBrains Mono',monospace;padding:12px 10px;cursor:pointer}
+.set-native-btn{width:100%;padding:14px;background:rgba(24,95,165,0.15);color:#6BAAFF;border:1px solid rgba(24,95,165,0.4);border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.2s}
+.popup-save{width:100%;padding:14px;background:linear-gradient(135deg,var(--g),var(--g2));color:#060810;border:none;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;font-family:'Syne',sans-serif;margin-bottom:10px;box-shadow:0 4px 20px rgba(0,255,178,0.2)}
+.popup-cancel{width:100%;padding:10px;background:none;border:none;color:var(--text3);font-size:14px;cursor:pointer;font-family:'Syne',sans-serif}
+
+/* ALARM SCREEN */
+.alarm-screen{display:none;position:fixed;inset:0;background:var(--bg);z-index:500;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px}
+.alarm-screen.show{display:flex}
+.alarm-anim{font-size:72px;animation:shake 0.4s infinite;filter:drop-shadow(0 0 20px rgba(255,184,48,0.6))}
+@keyframes shake{0%,100%{transform:rotate(-15deg) scale(1.1)}50%{transform:rotate(15deg) scale(0.9)}}
+.alarm-screen h2{font-size:26px;font-weight:800;color:#fff;margin:20px 0 8px;letter-spacing:-0.5px}
+.alarm-screen .alarm-time-big{font-size:52px;font-weight:700;color:var(--g);font-family:'JetBrains Mono',monospace;margin-bottom:8px;text-shadow:0 0 40px rgba(0,255,178,0.5)}
+.alarm-screen p{font-size:14px;color:var(--text2);margin-bottom:28px;line-height:1.7}
+.alarm-open-btn{width:100%;padding:16px;background:linear-gradient(135deg,var(--g),var(--g2));color:#060810;border:none;border-radius:16px;font-size:17px;font-weight:800;cursor:pointer;font-family:'Syne',sans-serif;margin-bottom:12px;box-shadow:0 4px 30px rgba(0,255,178,0.3)}
+.alarm-snooze-btn{width:100%;padding:14px;background:var(--card);color:var(--text2);border:1px solid var(--border2);border-radius:16px;font-size:15px;cursor:pointer;font-family:'Syne',sans-serif;margin-bottom:12px;font-weight:600}
+.alarm-dismiss-btn{width:100%;padding:12px;background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;font-family:'Syne',sans-serif}
+.streak-at-risk{background:rgba(255,77,109,0.07);border:1px solid rgba(255,77,109,0.25);border-radius:14px;padding:14px 18px;margin-bottom:24px;width:100%}
+.streak-at-risk p{font-size:13px;color:var(--red2)}
+.streak-at-risk .big{font-size:32px;font-weight:700;color:var(--red);font-family:'JetBrains Mono',monospace;text-shadow:0 0 20px rgba(255,77,109,0.4)}
+</style>
+</head>
+<body>
+
+<!-- STARS -->
+<div class="stars" id="stars"></div>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <h1><span class="sn-dot"></span>Supernova Streak</h1>
+    <p id="topbar-date">Loading...</p>
+  </div>
+  <div class="flame-badge"><span class="fire">🔥</span><span id="badge-streak">0</span></div>
+</div>
+
+<div class="hero">
+  <div class="streak-ring">
+    <svg viewBox="0 0 130 130">
+      <defs>
+        <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#00FFB2"/>
+          <stop offset="100%" stop-color="#00C98A"/>
+        </linearGradient>
+      </defs>
+      <circle class="ring-bg" cx="65" cy="65" r="56"/>
+      <circle class="ring-glow" cx="65" cy="65" r="56"/>
+      <circle class="ring-fill" id="ring-fill" cx="65" cy="65" r="56"/>
+    </svg>
+    <div class="streak-inner"><div class="streak-num" id="hero-streak">0</div><div class="streak-lbl">streak</div></div>
+  </div>
+  <p class="hero-sub" id="hero-sub">Upload today's screenshot to continue</p>
+</div>
+
+<div class="metrics">
+  <div class="metric-card"><div class="lbl">Longest</div><div class="val" id="m-longest">0</div><div class="sub">day record</div></div>
+  <div class="metric-card"><div class="lbl">Total done</div><div class="val" id="m-total">0</div><div class="sub">days practiced</div></div>
+  <div class="metric-card"><div class="lbl">This month</div><div class="val" id="m-month">0</div><div class="sub">days</div></div>
+  <div class="metric-card"><div class="lbl">Completion</div><div class="val" id="m-rate">0%</div><div class="sub">success rate</div></div>
+</div>
+
+<div class="section">
+  <div class="section-title">Verify today's task</div>
+  <div class="done-banner" id="done-banner"><span>✅</span><p>Streak secured today! Come back tomorrow.</p></div>
+  <img id="preview" class="preview" alt="preview">
+  <div class="upload-box" id="upload-box" onclick="document.getElementById('file-inp').click()" ondrop="onDrop(event)" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)">
+    <input type="file" id="file-inp" accept="image/*" style="display:none" onchange="onFile(event)">
+    <div class="u-icon">📸</div>
+    <div class="u-title">Upload Supernova screenshot</div>
+    <div class="u-sub">AI verifies your screenshot and updates your streak automatically</div>
+  </div>
+  <div class="result" id="result"><div id="r-icon"></div><div><div class="r-title" id="r-title"></div><div class="r-sub" id="r-sub"></div></div></div>
+  <button class="verify-btn" id="verify-btn" onclick="verify()" disabled>🤖 Verify &amp; add to streak</button>
+</div>
+
+<div class="section">
+  <div class="section-title">This month</div>
+  <div class="cal-days" id="cal"></div>
+</div>
+
+<div class="section">
+  <div class="section-title">History</div>
+  <div id="history"></div>
+</div>
+
+<!-- ALARM BAR -->
+<div class="alarm-bar" id="alarm-bar">
+  <div class="alarm-info">
+    <div class="a-label">🔔 Daily Reminder</div>
+    <div class="a-time" id="alarm-time-lbl">9:00 PM</div>
+    <div class="a-status on" id="alarm-status-txt">Alarm is ON</div>
+  </div>
+  <div class="alarm-controls">
+    <button class="btn-change" onclick="openPopup()">Change</button>
+    <button class="alarm-onoff on" id="alarm-toggle" onclick="toggleAlarm()" aria-label="Toggle alarm">
+      <div class="alarm-onoff-track"></div>
+      <div class="alarm-onoff-label" id="toggle-label">ON</div>
+      <div class="alarm-onoff-knob" id="toggle-knob">✓</div>
+    </button>
+  </div>
+</div>
+
+<!-- TIME PICKER POPUP -->
+<div class="overlay" id="overlay" onclick="closePopup()">
+  <div class="popup" onclick="event.stopPropagation()">
+    <h3>Set alarm time</h3>
+    <p>Alarm rings inside this app if task not done</p>
+    <div class="time-row">
+      <input type="number" class="time-inp" id="hr-inp" min="1" max="12" value="9">
+      <span class="time-sep">:</span>
+      <input type="number" class="time-inp" id="mn-inp" min="0" max="59" value="0">
+      <select class="ampm-sel" id="ampm-inp"><option>AM</option><option selected>PM</option></select>
+    </div>
+    <button class="set-native-btn" onclick="setNativeAlarm()">📱 Set phone alarm too (recommended)</button>
+    <button class="popup-save" onclick="saveAlarm()">✅ Save in-app alarm</button>
+    <button class="popup-cancel" onclick="closePopup()">Cancel</button>
+  </div>
+</div>
+
+<!-- IN-APP ALARM FULLSCREEN -->
+<div class="alarm-screen" id="alarm-screen">
+  <div class="alarm-anim">🔔</div>
+  <div class="alarm-time-big" id="alarm-now-time">9:00 PM</div>
+  <h2>Open Supernova now!</h2>
+  <div class="streak-at-risk">
+    <p>Your streak is at risk!</p>
+    <div class="big" id="alarm-streak-risk">0 🔥</div>
+    <p style="margin-top:4px;font-size:12px">days will reset if you don't complete today</p>
+  </div>
+  <p>Complete your English task in Supernova,<br>take a screenshot, and upload it here.</p>
+  <button class="alarm-open-btn" onclick="openSupernova()">📱 Open Supernova app</button>
+  <button class="alarm-snooze-btn" onclick="snooze()">⏰ Snooze 10 minutes</button>
+  <button class="alarm-dismiss-btn" onclick="dismissAlarm()">Dismiss (task done manually)</button>
+</div>
+
+<script>
+// Generate stars
+(function(){
+  const c=document.getElementById('stars');
+  for(let i=0;i<80;i++){
+    const s=document.createElement('div');
+    s.className='star';
+    const size=Math.random()*2+0.5;
+    s.style.cssText=`width:${size}px;height:${size}px;top:${Math.random()*100}%;left:${Math.random()*100}%;--d:${2+Math.random()*4}s;--delay:${Math.random()*4}s;--min:${0.05+Math.random()*0.1};--max:${0.4+Math.random()*0.6}`;
+    c.appendChild(s);
+  }
+})();
+
+const KEY='sn_app_v2';
+const today=new Date();
+function toKey(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+const todayKey=toKey(today);
+let imgB64=null;
+let snoozeUntil=null;
+let alarmAudio=null;
+let alarmTriggered=false;
+let S={log:{},alarmH:21,alarmM:0,alarmOn:true,dismissed:''};
+
+function load(){try{const d=localStorage.getItem(KEY);return d?JSON.parse(d):S}catch(e){return S}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+
+function calcStreak(){
+  let s=0,d=new Date(today);
+  while(true){const k=toKey(d);if(S.log[k]==='done'){s++;d.setDate(d.getDate()-1)}else if(S.log[k]==='miss')break;else if(k===todayKey){d.setDate(d.getDate()-1)}else break;}
+  return s;
+}
+function calcLongest(){
+  const keys=Object.keys(S.log).filter(k=>S.log[k]==='done').sort();
+  if(!keys.length)return 0;
+  let b=1,c=1;
+  for(let i=1;i<keys.length;i++){const a=new Date(keys[i-1]),bb=new Date(keys[i]);if(Math.round((bb-a)/86400000)===1){c++;b=Math.max(b,c)}else c=1;}
+  return b;
+}
+function calcMonth(){const m=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0');return Object.keys(S.log).filter(k=>k.startsWith(m)&&S.log[k]==='done').length;}
+function calcRate(){const v=Object.values(S.log);if(!v.length)return'0%';return Math.round(v.filter(x=>x==='done').length/v.length*100)+'%';}
+function fmt12(h,m){const ap=h>=12?'PM':'AM';return(h%12||12)+':'+String(m).padStart(2,'0')+' '+ap}
+
+function playAlarmSound(){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    function beep(freq,start,dur){
+      const o=ctx.createOscillator();const g=ctx.createGain();
+      o.connect(g);g.connect(ctx.destination);
+      o.frequency.value=freq;o.type='square';
+      g.gain.setValueAtTime(0.3,ctx.currentTime+start);
+      g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+start+dur);
+      o.start(ctx.currentTime+start);o.stop(ctx.currentTime+start+dur);
+    }
+    for(let i=0;i<6;i++){beep(880,i*0.4,0.2);beep(1100,i*0.4+0.2,0.2);}
+  }catch(e){}
+}
+
+function render(){
+  const s=calcStreak();
+  document.getElementById('topbar-date').textContent=today.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
+  document.getElementById('badge-streak').textContent=s;
+  document.getElementById('hero-streak').textContent=s;
+  const circ=2*Math.PI*56;
+  const glow=document.querySelector('.ring-glow');
+  const fill=document.getElementById('ring-fill');
+  const offset=circ-(circ*(Math.min(s,30)/30));
+  fill.style.strokeDasharray=circ;
+  fill.style.strokeDashoffset=offset;
+  if(glow){glow.style.strokeDasharray=circ;glow.style.strokeDashoffset=offset;}
+  document.getElementById('hero-sub').textContent=S.log[todayKey]==='done'?'Great work! Streak secured today 🎉':'Upload today\'s screenshot to continue';
+  document.getElementById('m-longest').textContent=calcLongest();
+  document.getElementById('m-total').textContent=Object.values(S.log).filter(v=>v==='done').length;
+  document.getElementById('m-month').textContent=calcMonth();
+  document.getElementById('m-rate').textContent=calcRate();
+  const tog=document.getElementById('alarm-toggle');
+  const bar=document.getElementById('alarm-bar');
+  const knob=document.getElementById('toggle-knob');
+  const lbl=document.getElementById('toggle-label');
+  if(S.alarmOn){tog.className='alarm-onoff on';bar.className='alarm-bar';knob.textContent='✓';lbl.textContent='ON';}
+  else{tog.className='alarm-onoff off';bar.className='alarm-bar alarm-off';knob.textContent='✕';lbl.textContent='OFF';}
+  document.getElementById('alarm-time-lbl').textContent=fmt12(S.alarmH,S.alarmM);
+  document.getElementById('alarm-status-txt').textContent=S.alarmOn?'Will ring if task not done':'Alarm disabled';
+  document.getElementById('alarm-status-txt').className='a-status '+(S.alarmOn?'on':'off');
+  const todayDone=S.log[todayKey]==='done';
+  document.getElementById('done-banner').className=todayDone?'done-banner show':'done-banner';
+  document.getElementById('upload-box').style.display=todayDone?'none':'block';
+  document.getElementById('verify-btn').style.display=todayDone?'none':'flex';
+  if(todayDone){document.getElementById('preview').style.display='none';document.getElementById('result').className='result';}
+  renderCal();renderHist();
+}
+
+function renderCal(){
+  const days=['S','M','T','W','T','F','S'];
+  let h=days.map(d=>`<div class="cal-day-lbl">${d}</div>`).join('');
+  const first=new Date(today.getFullYear(),today.getMonth(),1).getDay();
+  const dim=new Date(today.getFullYear(),today.getMonth()+1,0).getDate();
+  for(let i=0;i<first;i++)h+='<div class="cal-cell"></div>';
+  for(let d=1;d<=dim;d++){
+    const k=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const cell=new Date(today.getFullYear(),today.getMonth(),d);
+    const isTod=k===todayKey,isFut=cell>today&&!isTod;
+    let cls='cal-cell';
+    if(isFut)cls+=' future';else if(S.log[k]==='done')cls+=' done';else if(S.log[k]==='miss')cls+=' miss';
+    if(isTod)cls+=' today';
+    h+=`<div class="${cls}">${d}</div>`;
+  }
+  document.getElementById('cal').innerHTML=h;
+}
+
+function renderHist(){
+  const entries=Object.entries(S.log).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,10);
+  if(!entries.length){document.getElementById('history').innerHTML='<p style="font-size:13px;color:var(--text3);text-align:center;padding:16px 0">No entries yet — upload your first screenshot!</p>';return;}
+  const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  document.getElementById('history').innerHTML=entries.map(([k,v])=>{
+    const d=new Date(k);const lbl=k===todayKey?'Today':days[d.getDay()]+' '+String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');
+    return`<div class="hist-item"><span class="hist-date">${lbl}</span><span class="badge ${v==='done'?'done':'miss'}">${v==='done'?'Verified ✓':'Missed'}</span></div>`;
+  }).join('');
+}
+
+function checkAlarm(){
+  if(!S.alarmOn||S.log[todayKey]==='done'||S.dismissed===todayKey)return;
+  const now=new Date();
+  if(snoozeUntil&&now<snoozeUntil)return;
+  if(snoozeUntil&&now>=snoozeUntil)snoozeUntil=null;
+  const pastAlarmTime=now.getHours()>S.alarmH||(now.getHours()===S.alarmH&&now.getMinutes()>=S.alarmM);
+  if(pastAlarmTime){if(!alarmTriggered){triggerAlarm();}}
+  else{alarmTriggered=false;}
+}
+
+function triggerAlarm(){alarmTriggered=true;
+  const s=calcStreak();
+  // Show current real time on alarm screen
+  const alarmNow=new Date();
+  document.getElementById('alarm-now-time').textContent=fmt12(alarmNow.getHours(),alarmNow.getMinutes());
+  // Also tick the clock every minute while alarm screen is open
+  if(window._alarmClock)clearInterval(window._alarmClock);
+  window._alarmClock=setInterval(()=>{
+    const t=new Date();
+    document.getElementById('alarm-now-time').textContent=fmt12(t.getHours(),t.getMinutes());
+  },10000);
+  document.getElementById('alarm-streak-risk').textContent=s+' 🔥';
+  document.getElementById('alarm-screen').className='alarm-screen show';
+  playAlarmSound();
+  alarmAudio=setInterval(playAlarmSound,3000);
+}
+
+function stopAlarmSound(){if(alarmAudio){clearInterval(alarmAudio);alarmAudio=null;}if(window._alarmClock){clearInterval(window._alarmClock);window._alarmClock=null;}}
+
+function dismissAlarm(){
+  stopAlarmSound();
+  S.dismissed=todayKey;
+  alarmTriggered=true;
+  save();
+  document.getElementById('alarm-screen').className='alarm-screen';
+}
+
+function snooze(){
+  stopAlarmSound();
+  snoozeUntil=new Date(Date.now()+10*60*1000);
+  alarmTriggered=false;
+  document.getElementById('alarm-screen').className='alarm-screen';
+}
+
+function openSupernova(){
+  stopAlarmSound();
+  document.getElementById('alarm-screen').className='alarm-screen';
+  window.location.href='intent://live.gosupernova.app#Intent;scheme=https;package=live.gosupernova.app;end';
+  setTimeout(()=>{window.location.href='https://play.google.com/store/apps/details?id=live.gosupernova.app'},1500);
+}
+
+function onDragOver(e){e.preventDefault();document.getElementById('upload-box').classList.add('drag')}
+function onDragLeave(){document.getElementById('upload-box').classList.remove('drag')}
+function onDrop(e){e.preventDefault();document.getElementById('upload-box').classList.remove('drag');const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/'))processFile(f)}
+function onFile(e){const f=e.target.files[0];if(f)processFile(f)}
+
+function processFile(file){
+  const r=new FileReader();
+  r.onload=ev=>{
+    imgB64=ev.target.result.split(',')[1];
+    const prev=document.getElementById('preview');
+    prev.src=ev.target.result;prev.style.display='block';
+    document.getElementById('verify-btn').disabled=false;
+    document.getElementById('result').className='result';
+  };
+  r.readAsDataURL(file);
+}
+
+function showResult(type,title,sub){
+  const el=document.getElementById('result');
+  const ri=document.getElementById('r-icon');
+  if(!type){el.className='result';return}
+  el.className='result show '+type;
+  document.getElementById('r-title').textContent=title;
+  document.getElementById('r-sub').textContent=sub;
+  if(type==='checking')ri.innerHTML='<div class="spinner"></div>';
+  else if(type==='ok')ri.innerHTML='<span style="font-size:22px">✅</span>';
+  else ri.innerHTML='<span style="font-size:22px">❌</span>';
+}
+
+async function verify(){
+  if(!imgB64)return;
+  const btn=document.getElementById('verify-btn');
+  btn.disabled=true;
+  showResult('checking','Verifying with AI...','Checking your Supernova screenshot');
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:200,
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:'image/jpeg',data:imgB64}},
+          {type:'text',text:'Is this a screenshot of the Supernova English learning app? Look for: the word Supernova, English lessons, sections, vocabulary, speaking tasks, streak counters, Nova AI, or any English practice screen. Reply ONLY with JSON: {"verified":true,"reason":"short reason","streak":NUMBER_IF_VISIBLE_OR_0} No other text.'}
+        ]}]
+      })
+    });
+    const data=await resp.json();
+    const txt=data.content.map(c=>c.text||'').join('').replace(/```json|```/g,'').trim();
+    const res=JSON.parse(txt);
+    if(res.verified){
+      S.log[todayKey]='done';
+      if(res.streak&&res.streak>0){
+        const d=new Date(today);
+        for(let i=0;i<res.streak;i++){if(!S.log[toKey(d)]){S.log[toKey(d)]='done';}d.setDate(d.getDate()-1);}
+      }
+      save();
+      showResult('ok','Supernova verified! Streak +1 🎉','Screenshot confirmed — your streak is updated!');
+      setTimeout(render,600);
+    }else{
+      showResult('fail','Not verified','Reason: '+res.reason+'. Please upload a Supernova app screenshot.');
+      btn.disabled=false;
+    }
+  }catch(err){
+    showResult('fail','Verification failed','Please check internet and try again.');
+    btn.disabled=false;
+  }
+}
+
+function openPopup(){
+  document.getElementById('hr-inp').value=S.alarmH%12||12;
+  document.getElementById('mn-inp').value=String(S.alarmM).padStart(2,'0');
+  document.getElementById('ampm-inp').value=S.alarmH>=12?'PM':'AM';
+  document.getElementById('overlay').className='overlay show';
+}
+function closePopup(){document.getElementById('overlay').className='overlay'}
+function toggleAlarm(){
+  S.alarmOn=!S.alarmOn;
+  if(!S.alarmOn){
+    stopAlarmSound();
+    document.getElementById('alarm-screen').className='alarm-screen';
+    alarmTriggered=false;
+  }
+  save();render();
+}
+
+function saveAlarm(){
+  let h=parseInt(document.getElementById('hr-inp').value)||9;
+  const m=parseInt(document.getElementById('mn-inp').value)||0;
+  const ap=document.getElementById('ampm-inp').value;
+  if(ap==='PM'&&h!==12)h+=12;if(ap==='AM'&&h===12)h=0;
+  S.alarmH=h;S.alarmM=m;save();closePopup();render();
+}
+
+function setNativeAlarm(){
+  let h=parseInt(document.getElementById('hr-inp').value)||9;
+  const m=parseInt(document.getElementById('mn-inp').value)||0;
+  const ap=document.getElementById('ampm-inp').value;
+  if(ap==='PM'&&h!==12)h+=12;if(ap==='AM'&&h===12)h=0;
+  S.alarmH=h;S.alarmM=m;save();
+  const androidAlarm=`intent:#Intent;action=android.intent.action.SET_ALARM;S.android.intent.extra.alarm.MESSAGE=Supernova+Task;i.android.intent.extra.alarm.HOUR=${h};i.android.intent.extra.alarm.MINUTES=${m};Z.android.intent.extra.alarm.SKIP_UI=false;end`;
+  window.location.href=androidAlarm;
+  closePopup();render();
+  setTimeout(()=>alert('Phone alarm set for '+fmt12(h,m)+'! This will ring even when the app is closed.'),500);
+}
+
+S=load();render();
+setInterval(()=>{checkAlarm();},30000);
+setTimeout(checkAlarm,2000);
+</script>
+
+
+<script>
+if('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  window.addEventListener('load', () => {
+    const swCode = `const CACHE='sn-streak-v2';const ASSETS=['./index.html','./manifest.json'];self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting()))});self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});self.addEventListener('fetch',e=>{if(e.request.url.includes('api.anthropic.com')||e.request.url.includes('fonts.google')){e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));return;}e.respondWith(caches.match(e.request).then(cached=>cached||fetch(e.request).then(resp=>{const clone=resp.clone();caches.open(CACHE).then(c=>c.put(e.request,clone));return resp;})));});`;
+    const blob = new Blob([swCode], {type: 'application/javascript'});
+    const swUrl = URL.createObjectURL(blob);
+    navigator.serviceWorker.register(swUrl)
+      .then(r => console.log('SW registered'))
+      .catch(e => console.warn('SW skipped:', e.message));
+  });
+}
+</script>
+</body>
+</html>
